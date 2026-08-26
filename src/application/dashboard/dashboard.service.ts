@@ -1,122 +1,226 @@
-import { isBillableCategory } from "@/domain/costing/is-billable-category";
+import { DEFAULT_BILLING_CONFIGURATION } from "@/application/configuration/default-billing-configuration";
 
-import { calculateProjectProfitabilityPortfolio } from "@/domain/profitability/project-profitability-portfolio";
+import { isBillableCategory } from "@/domain/costing/is-billable-category";
+import { calculateCostAllocationsByPeriod } from "@/domain/costing/cost-allocations-by-period";
+
+import { calculateProjectProfitability } from "@/domain/profitability/project-profitability";
+
+import type { MonthNumber } from "@/domain/shared/period";
 
 import { FinancialReportingRepository } from "@/infrastructure/repositories/financial-reporting.repository";
 
-import type { DashboardViewModel } from "./dashboard.view-model";
+import {
+  SALES_MONTH_REVENUE_RECOGNITION,
+  type RevenueRecognitionPeriod,
+} from "./revenue-recognition-policy";
 
-import { DEFAULT_BILLING_CONFIGURATION } from "@/application/configuration/default-billing-configuration";
+import type {
+  DashboardProjectRow,
+  DashboardViewModel,
+} from "./dashboard.view-model";
 
 export class DashboardService {
   constructor(
     private readonly repository = new FinancialReportingRepository(),
   ) {}
 
-  async getDashboard(year: number): Promise<DashboardViewModel> {
-    const { projects, salaries, timesheetEntries } =
-      await this.repository.getYearData(year);
+  async getDashboard(
+    year: number,
+    month: MonthNumber | null,
+  ): Promise<DashboardViewModel> {
+    const [data, availableYears] = await Promise.all([
+      this.repository.getYearData(year),
 
-    const portfolio = calculateProjectProfitabilityPortfolio({
-      projects,
-      salaries,
-      timesheetEntries,
+      this.repository.getAvailableYears(),
+    ]);
+
+    const { projects, salaries, timesheetEntries } = data;
+
+    const filteredTimesheetEntries =
+      month === null
+        ? timesheetEntries
+        : timesheetEntries.filter((entry) => entry.period.month === month);
+
+    const filteredSalaries =
+      month === null
+        ? salaries
+        : salaries.filter((salary) => salary.period.month === month);
+
+    const period: RevenueRecognitionPeriod = {
+      year,
+      month,
+    };
+
+    const costAllocationsByPeriod = calculateCostAllocationsByPeriod({
+      salaries: filteredSalaries,
+
+      timesheetEntries: filteredTimesheetEntries,
+
       configuration: DEFAULT_BILLING_CONFIGURATION,
     });
 
-    const totalHours = timesheetEntries.reduce(
+    const totalHours = filteredTimesheetEntries.reduce(
       (total, entry) => total + entry.hours,
       0,
     );
 
-    const billableHours = timesheetEntries
-      .filter((entry) =>
-        isBillableCategory(entry.category, DEFAULT_BILLING_CONFIGURATION),
-      )
-      .reduce((total, entry) => total + entry.hours, 0);
-
-    const dashboardProjects = portfolio.projects.map((project) => ({
-      referenceCode: project.referenceCode,
-
-      name: project.name,
-
-      revenueAed: project.priceAed,
-
-      costAed: project.totalCostAed,
-
-      profitAed: project.profitAed,
-
-      margin: project.profitability,
-
-      hours: project.totalHours,
-
-      isComplete: project.isComplete,
-    }));
-
-    const completeProjects = dashboardProjects.filter(
-      (project) => project.isComplete && project.costAed !== null,
+    const billableEntries = filteredTimesheetEntries.filter((entry) =>
+      isBillableCategory(entry.category, DEFAULT_BILLING_CONFIGURATION),
     );
+
+    const billableHours = billableEntries.reduce(
+      (total, entry) => total + entry.hours,
+      0,
+    );
+
+    const knownReferenceCodes = new Set(
+      projects.map((project) => project.referenceCode),
+    );
+
+    const unpricedReferenceCodes = new Set(
+      billableEntries
+        .map((entry) => entry.referenceCode)
+        .filter(
+          (referenceCode): referenceCode is string =>
+            referenceCode !== null && !knownReferenceCodes.has(referenceCode),
+        ),
+    );
+
+    const dashboardProjects: DashboardProjectRow[] = projects
+      .map((project) => {
+        /*
+         * We pass only entries from the selected period.
+         * We consume the resulting cost/hours fields here.
+         *
+         * Revenue for the dashboard period is handled
+         * separately by the revenue-recognition policy.
+         */
+        const delivery = calculateProjectProfitability({
+          project,
+
+          timesheetEntries: filteredTimesheetEntries,
+
+          costAllocationsByPeriod,
+
+          configuration: DEFAULT_BILLING_CONFIGURATION,
+        });
+
+        const revenueAed = SALES_MONTH_REVENUE_RECOGNITION.recognizedRevenueAed(
+          project,
+          period,
+        );
+
+        const profitAed =
+          delivery.totalCostAed === null
+            ? null
+            : revenueAed - delivery.totalCostAed;
+
+        const margin =
+          profitAed !== null && revenueAed > 0 ? profitAed / revenueAed : null;
+
+        return {
+          referenceCode: project.referenceCode,
+
+          name: project.name,
+
+          revenueAed,
+
+          costAed: delivery.totalCostAed,
+
+          profitAed,
+
+          margin,
+
+          hours: delivery.totalHours,
+
+          isComplete: delivery.isComplete,
+        };
+      })
+      .filter((project) => project.hours > 0 || project.revenueAed > 0);
+
+    const revenueComplete = unpricedReferenceCodes.size === 0;
+
+    const costComplete =
+      unpricedReferenceCodes.size === 0 &&
+      dashboardProjects.every(
+        (project) => project.isComplete && project.costAed !== null,
+      );
 
     const totalRevenueAed = dashboardProjects.reduce(
       (total, project) => total + project.revenueAed,
       0,
     );
 
-    const totalCostAed = completeProjects.reduce(
+    const totalCostAed = dashboardProjects.reduce(
       (total, project) => total + (project.costAed ?? 0),
       0,
     );
 
-    const allProjectsComplete =
-      completeProjects.length === dashboardProjects.length &&
-      portfolio.unpricedWork.length === 0;
+    const profitComplete = revenueComplete && costComplete;
 
-    const totalProfitAed = allProjectsComplete
+    const totalProfitAed = profitComplete
       ? totalRevenueAed - totalCostAed
-      : 0;
+      : null;
 
     const margin =
-      allProjectsComplete && totalRevenueAed !== 0
+      totalProfitAed !== null && totalRevenueAed > 0
         ? totalProfitAed / totalRevenueAed
         : null;
 
     return {
-      year,
+      filters: {
+        year,
+        month,
+      },
+
+      availableYears: availableYears.length > 0 ? availableYears : [year],
+
+      revenueRecognitionLabel: SALES_MONTH_REVENUE_RECOGNITION.label,
 
       totalHours,
       billableHours,
 
       revenue: {
-        value: totalRevenueAed,
+        value: revenueComplete ? totalRevenueAed : null,
 
-        isComplete: portfolio.unpricedWork.length === 0,
+        isComplete: revenueComplete,
       },
 
       cost: {
-        value: totalCostAed,
+        value: costComplete ? totalCostAed : null,
 
-        isComplete: allProjectsComplete,
+        isComplete: costComplete,
       },
 
       profit: {
         value: totalProfitAed,
 
-        isComplete: allProjectsComplete,
+        isComplete: profitComplete,
       },
 
       margin,
 
-      projects: dashboardProjects.sort(
-        (left, right) =>
-          (right.margin ?? Number.NEGATIVE_INFINITY) -
-          (left.margin ?? Number.NEGATIVE_INFINITY),
-      ),
+      projects: dashboardProjects.sort((left, right) => {
+        if (left.margin === null && right.margin === null) {
+          return right.hours - left.hours;
+        }
+
+        if (left.margin === null) {
+          return 1;
+        }
+
+        if (right.margin === null) {
+          return -1;
+        }
+
+        return right.margin - left.margin;
+      }),
 
       incompleteProjectCount: dashboardProjects.filter(
         (project) => !project.isComplete,
       ).length,
 
-      unpricedReferenceCodeCount: portfolio.unpricedWork.length,
+      unpricedReferenceCodeCount: unpricedReferenceCodes.size,
     };
   }
 }

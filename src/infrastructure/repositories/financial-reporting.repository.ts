@@ -133,4 +133,39 @@ export class FinancialReportingRepository {
       take: limit,
     });
   }
+
+  async getAvailableYears(): Promise<readonly number[]> {
+    const [timesheetYears, salaryYears, projectYears] = await Promise.all([
+      prisma.timesheetEntry.findMany({
+        select: {
+          year: true,
+        },
+        distinct: ["year"],
+      }),
+
+      prisma.monthlySalary.findMany({
+        select: {
+          year: true,
+        },
+        distinct: ["year"],
+      }),
+
+      prisma.project.findMany({
+        select: {
+          salesYear: true,
+        },
+        distinct: ["salesYear"],
+      }),
+    ]);
+
+    return [
+      ...new Set([
+        ...timesheetYears.map((entry) => entry.year),
+
+        ...salaryYears.map((entry) => entry.year),
+
+        ...projectYears.map((entry) => entry.salesYear),
+      ]),
+    ].sort((left, right) => right - left);
+  }
 }

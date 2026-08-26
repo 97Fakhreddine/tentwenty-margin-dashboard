@@ -1,5 +1,12 @@
+import type { MonthNumber } from "@/domain/shared/period";
+
+export interface DashboardFilters {
+  readonly year: number;
+  readonly month: MonthNumber | null;
+}
+
 export interface DashboardMetric {
-  readonly value: number;
+  readonly value: number | null;
   readonly isComplete: boolean;
 }
 
@@ -20,7 +27,11 @@ export interface DashboardProjectRow {
 }
 
 export interface DashboardViewModel {
-  readonly year: number;
+  readonly filters: DashboardFilters;
+
+  readonly availableYears: readonly number[];
+
+  readonly revenueRecognitionLabel: string;
 
   readonly totalHours: number;
   readonly billableHours: number;
