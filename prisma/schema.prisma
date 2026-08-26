@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Employee {
+  employeeNumber String @id
+  name           String
+
+  salaries         MonthlySalary[]
+  timesheetEntries TimesheetEntry[]
+}
+
+model MonthlySalary {
+  id             Int    @id @default(autoincrement())
+  employeeNumber String
+  year           Int
+  month          Int
+  amountAed      Float
+
+  employee Employee @relation(fields: [employeeNumber], references: [employeeNumber], onDelete: Cascade)
+
+  @@unique([employeeNumber, year, month])
+  @@index([year, month])
+}
+
+model TimesheetEntry {
+  id Int @id @default(autoincrement())
+
+  employeeNumber String
+
+  year  Int
+  month Int
+
+  expenseType String
+
+  department  String
+  designation String
+  category    String
+
+  referenceCode       String?
+  projectOrTaskName   String?
+  companyOrCostCenter String?
+  description         String?
+
+  hours Float
+
+  employee Employee @relation(fields: [employeeNumber], references: [employeeNumber], onDelete: Cascade)
+
+  @@index([year, month])
+  @@index([employeeNumber, year, month])
+  @@index([referenceCode])
+  @@index([category])
+}
+
+model Project {
+  referenceCode String @id
+
+  name     String
+  priceAed Float
+
+  salesYear  Int
+  salesMonth Int
+
+  category String
+  status   String?
+
+  @@index([salesYear, salesMonth])
+}
+
+model ImportBatch {
+  id String @id @default(cuid())
+
+  kind           String
+  sourceFileName String
+
+  recordCount  Int
+  warningCount Int @default(0)
+
+  importedAt DateTime @default(now())
+}
