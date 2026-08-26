@@ -19,7 +19,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio --url=\"file:./dev.db\"",
     "data:load-sample": "tsx scripts/load-sample-data.ts",
-    "db:inspect": "tsx scripts/inspect-database.ts"
+    "db:inspect": "tsx scripts/inspect-database.ts",
+    "finance:reconcile": "tsx scripts/reconcile-costs.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "7.10.0",
