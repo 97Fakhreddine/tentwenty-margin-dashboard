@@ -1,8 +1,3 @@
-import {
-  DEFAULT_BILLABLE_CATEGORIES,
-  type BillingConfiguration,
-} from "@/domain";
-
 import { isBillableCategory } from "@/domain/costing/is-billable-category";
 
 import { calculateProjectProfitabilityPortfolio } from "@/domain/profitability/project-profitability-portfolio";
@@ -11,11 +6,7 @@ import { FinancialReportingRepository } from "@/infrastructure/repositories/fina
 
 import type { DashboardViewModel } from "./dashboard.view-model";
 
-const DEFAULT_CONFIGURATION: BillingConfiguration = {
-  billableCategories: DEFAULT_BILLABLE_CATEGORIES,
-
-  monthlyOverheadAed: 0,
-};
+import { DEFAULT_BILLING_CONFIGURATION } from "@/application/configuration/default-billing-configuration";
 
 export class DashboardService {
   constructor(
@@ -30,7 +21,7 @@ export class DashboardService {
       projects,
       salaries,
       timesheetEntries,
-      configuration: DEFAULT_CONFIGURATION,
+      configuration: DEFAULT_BILLING_CONFIGURATION,
     });
 
     const totalHours = timesheetEntries.reduce(
@@ -40,7 +31,7 @@ export class DashboardService {
 
     const billableHours = timesheetEntries
       .filter((entry) =>
-        isBillableCategory(entry.category, DEFAULT_CONFIGURATION),
+        isBillableCategory(entry.category, DEFAULT_BILLING_CONFIGURATION),
       )
       .reduce((total, entry) => total + entry.hours, 0);
 

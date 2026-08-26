@@ -15,13 +15,9 @@ export const dynamic = "force-dynamic";
 const DASHBOARD_YEAR = 2025;
 
 export default async function DashboardPage() {
-  const dashboardService =
-    new DashboardService();
+  const dashboardService = new DashboardService();
 
-  const dashboard =
-    await dashboardService.getDashboard(
-      DASHBOARD_YEAR,
-    );
+  const dashboard = await dashboardService.getDashboard(DASHBOARD_YEAR);
 
   return (
     <main className="min-h-screen bg-zinc-50">
@@ -37,9 +33,7 @@ export default async function DashboardPage() {
             </h1>
 
             <p className="mt-2 text-sm text-zinc-600">
-              Project profitability
-              overview for{" "}
-              {dashboard.year}
+              Project profitability overview for {dashboard.year}
             </p>
           </div>
 
@@ -51,68 +45,47 @@ export default async function DashboardPage() {
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             label="Revenue"
-            value={formatCurrencyAed(
-              dashboard.revenue.value,
-            )}
+            value={formatCurrencyAed(dashboard.revenue.value)}
           />
 
           <MetricCard
             label="Cost"
-            value={formatCurrencyAed(
-              dashboard.cost.value,
-            )}
+            value={formatCurrencyAed(dashboard.cost.value)}
           />
 
           <MetricCard
             label="Profit"
-            value={formatCurrencyAed(
-              dashboard.profit.value,
-            )}
+            value={formatCurrencyAed(dashboard.profit.value)}
           />
 
           <MetricCard
             label="Margin"
-            value={formatPercentage(
-              dashboard.margin,
-            )}
+            value={formatPercentage(dashboard.margin)}
           />
         </section>
 
         <section className="mt-4 grid gap-4 sm:grid-cols-2">
           <MetricCard
             label="Total hours"
-            value={formatHours(
-              dashboard.totalHours,
-            )}
+            value={formatHours(dashboard.totalHours)}
           />
 
           <MetricCard
             label="Billable hours"
-            value={formatHours(
-              dashboard.billableHours,
-            )}
+            value={formatHours(dashboard.billableHours)}
           />
         </section>
 
-        {dashboard.incompleteProjectCount >
-          0 ||
-          dashboard.unpricedReferenceCodeCount >
-          0 ? (
+        {dashboard.incompleteProjectCount > 0 ||
+        dashboard.unpricedReferenceCodeCount > 0 ? (
           <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-            Some financial figures are
-            incomplete. Review missing
-            salaries or project prices
-            before relying on margin
-            totals.
+            Some financial figures are incomplete. Review missing salaries or
+            project prices before relying on margin totals.
           </div>
         ) : null}
 
         <section className="mt-8">
-          <ProjectProfitabilityTable
-            projects={
-              dashboard.projects
-            }
-          />
+          <ProjectProfitabilityTable projects={dashboard.projects} />
         </section>
       </div>
     </main>
