@@ -159,7 +159,8 @@ export default async function DashboardPage({
           </p>
 
           <p className="mt-1 text-sm text-zinc-700">
-            {dashboard.revenueRecognitionLabel}
+            {dashboard.revenueRecognitionLabel} This is an explicit assumption
+            and is isolated from the financial calculation engine.
           </p>
         </div>
 
@@ -173,9 +174,20 @@ export default async function DashboardPage({
         ) : null}
 
         {/* Projects */}
-        <section className="mt-8">
-          <ProjectProfitabilityTable projects={dashboard.projects} />
-        </section>
+        {dashboard.projects.length === 0 ? (
+          <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-8 text-center">
+            <h2 className="font-medium text-zinc-950">No project activity</h2>
+
+            <p className="mt-2 text-sm text-zinc-500">
+              No project delivery or recognized revenue exists for the selected
+              period.
+            </p>
+          </div>
+        ) : (
+          <section className="mt-8">
+            <ProjectProfitabilityTable projects={dashboard.projects} />
+          </section>
+        )}
       </div>
     </main>
   );

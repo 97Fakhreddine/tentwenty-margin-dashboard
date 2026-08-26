@@ -7,9 +7,18 @@ import {
   formatHours,
   formatPercentage,
 } from "@/components/shared/formatters";
+import { formatProjectDisplayName } from "../shared/project-name";
 
 interface ProjectProfitabilityTableProps {
   readonly projects: readonly DashboardProjectRow[];
+}
+
+function financialValueClass(value: number | null): string {
+  if (value === null) {
+    return "text-zinc-500";
+  }
+
+  return value < 0 ? "text-red-600" : "text-zinc-950";
 }
 
 export function ProjectProfitabilityTable({
@@ -49,7 +58,7 @@ export function ProjectProfitabilityTable({
                     href={`/projects/${project.referenceCode}`}
                     className="font-medium text-zinc-950 hover:underline"
                   >
-                    {project.name}
+                    {formatProjectDisplayName(project.name)}
                   </Link>
 
                   <div className="mt-1 text-xs text-zinc-500">
@@ -71,13 +80,21 @@ export function ProjectProfitabilityTable({
                     : formatCurrencyAed(project.costAed)}
                 </td>
 
-                <td className="px-4 py-4 text-right tabular-nums">
+                <td
+                  className={`px-4 py-4 text-right tabular-nums ${financialValueClass(
+                    project.profitAed,
+                  )}`}
+                >
                   {project.profitAed === null
                     ? "—"
                     : formatCurrencyAed(project.profitAed)}
                 </td>
 
-                <td className="px-6 py-4 text-right font-medium tabular-nums">
+                <td
+                  className={`px-6 py-4 text-right font-medium tabular-nums ${financialValueClass(
+                    project.margin,
+                  )}`}
+                >
                   {formatPercentage(project.margin)}
                 </td>
               </tr>

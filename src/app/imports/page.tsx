@@ -63,7 +63,18 @@ export default async function ImportsPage() {
         </section>
 
         <section className="mt-8">
-          <ImportHistoryTable imports={imports} />
+          {imports.length === 0 ? (
+            <div className="rounded-xl border border-zinc-200 bg-white p-8 text-center">
+              <h2 className="font-medium text-zinc-950">No imports yet</h2>
+
+              <p className="mt-2 text-sm text-zinc-500">
+                Upload one of the source workbooks to start building the
+                financial dataset.
+              </p>
+            </div>
+          ) : (
+            <ImportHistoryTable imports={imports} />
+          )}
         </section>
       </div>
     </main>
