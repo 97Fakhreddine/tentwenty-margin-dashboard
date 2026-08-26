@@ -21,7 +21,8 @@
     "data:load-sample": "tsx scripts/load-sample-data.ts",
     "db:inspect": "tsx scripts/inspect-database.ts",
     "finance:reconcile": "tsx scripts/reconcile-costs.ts",
-    "finance:projects": "tsx scripts/inspect-project-profitability.ts"
+    "finance:projects": "tsx scripts/inspect-project-profitability.ts",
+    "data:create-january-timesheet": "tsx scripts/create-january-timesheet.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "7.10.0",

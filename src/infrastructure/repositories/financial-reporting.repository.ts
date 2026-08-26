@@ -124,4 +124,13 @@ export class FinancialReportingRepository {
       timesheetEntries,
     };
   }
+  async getRecentImports(limit = 10) {
+    return prisma.importBatch.findMany({
+      orderBy: {
+        importedAt: "desc",
+      },
+
+      take: limit,
+    });
+  }
 }
