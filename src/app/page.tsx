@@ -9,6 +9,7 @@ import {
   formatHours,
   formatPercentage,
 } from "@/components/shared/formatters";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +38,17 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700">
-            {dashboard.year}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/productivity"
+              className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Productivity
+            </Link>
+
+            <div className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700">
+              {dashboard.year}
+            </div>
           </div>
         </header>
 
