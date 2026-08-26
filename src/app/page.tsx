@@ -46,6 +46,13 @@ export default async function DashboardPage() {
               Productivity
             </Link>
 
+            <Link
+              href="/categories"
+              className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Categories
+            </Link>
+
             <div className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700">
               {dashboard.year}
             </div>
